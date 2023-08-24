@@ -111,8 +111,7 @@ class ImageGenStack extends TerraformStack {
           APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
           APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
           RATE_LIMIT_PER_MINUTE: process.env.RATE_LIMIT_PER_MINUTE!,
-        },
-        depandOn: cloudFunctionDeploymentConstruct.services,
+        }
       }
     );
 

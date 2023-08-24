@@ -11,7 +11,6 @@ import { GoogleServiceAccount } from "../.gen/providers/google-beta/google-servi
 import { GoogleStorageBucketObject } from "../.gen/providers/google-beta/google-storage-bucket-object";
 import { CloudFunctionDeploymentConstruct } from "./cloud-function-deployment-construct";
 import path = require("path");
-import { ITerraformDependable } from "cdktf";
 
 export interface CloudFunctionConstructProps {
   readonly functionName: string;
@@ -23,8 +22,7 @@ export interface CloudFunctionConstructProps {
   readonly cloudFunctionDeploymentConstruct: CloudFunctionDeploymentConstruct;
   readonly environmentVariables?: { [key: string]: string };
   readonly eventTrigger?: GoogleCloudfunctions2FunctionEventTrigger;
-  readonly makePublic?: boolean;
-  readonly depandOn?: ITerraformDependable[];
+  readonly makePublic?: boolean; 
 }
 
 export class CloudFunctionConstruct extends Construct {
@@ -123,6 +121,7 @@ export class CloudFunctionConstruct extends Construct {
           environmentVariables: props.environmentVariables ?? {},
         },
         eventTrigger: props.eventTrigger,
+        dependsOn: props.cloudFunctionDeploymentConstruct.services
       }
     );
 
