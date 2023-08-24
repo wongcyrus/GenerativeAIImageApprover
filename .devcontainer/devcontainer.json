@@ -37,12 +37,9 @@
 				"ms-python.python",
 				"ms-python.vscode-pylance",		
 				"ms-python.autopep8",
-				"ms-python.pylint",
-				"ms-toolsai.jupyter",
+				"ms-python.pylint",				
 				"github.copilot",
-				"ms-vscode.vscode-typescript-next",
-				"ms-dotnettools.csharp",
-				"svipas.prettier-plus",
+				"ms-vscode.vscode-typescript-next",		
 				"googlecloudtools.cloudcode"
 			]
 		},

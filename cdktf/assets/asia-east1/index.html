@@ -1,0 +1,52 @@
+<html>
+  <head> </head>
+  <body>
+    <h1>Gen Image</h1>
+    <!-- Simple form with 2 field email and prompt is text area -->
+    <form action="" method="post">
+      <label for="email">Email:</label><br />
+      <input type="email" id="email" name="email" required /><br /><br />
+      <label for="prompt">Prompt:</label><br />
+      <textarea id="prompt" name="prompt" rows="8" cols="50" required></textarea
+      ><br /><br />
+      <input id="genimage" type="submit" value="Gen Image" />
+    </form>
+    <script>
+      // get url query string: api and key
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      const api = urlParams.get("api");
+      const key = urlParams.get("key");
+      //When click on genimage, disable default submit, and send ajax get request to api.
+      // with parameters key, email and prompt.
+
+      const genButton = document.getElementById("genimage");
+      genButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        var email = document.getElementById("email").value;
+        var prompt = document.getElementById("prompt").value;
+        // urlencoded email and prompt
+        email = encodeURIComponent(email);
+        prompt = encodeURIComponent(prompt);
+
+        // Disable genimage for 15 seconds
+        genButton.disabled = true;
+        setTimeout(function () {
+          genButton.disabled = false;
+        }, 15000);
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            alert(this.responseText);
+          }
+        };
+        xhttp.open(
+          "GET",
+          api + "?key=" + key + "&email=" + email + "&prompt=" + prompt,
+          true
+        );
+        xhttp.send();
+      });
+    </script>
+  </body>
+</html>
