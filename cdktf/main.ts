@@ -86,8 +86,7 @@ class ImageGenStack extends TerraformStack {
           SECRET_KEY: process.env.SECRET_KEY!,
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
-        },
-        depandOn: cloudFunctionDeploymentConstruct.services,
+        }
       }
     );
 
