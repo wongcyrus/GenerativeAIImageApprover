@@ -86,8 +86,7 @@ class ImageGenStack extends TerraformStack {
           SECRET_KEY: process.env.SECRET_KEY!,
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
-        },
-        depandOn: cloudFunctionDeploymentConstruct.services,
+        }
       }
     );
 
@@ -111,8 +110,7 @@ class ImageGenStack extends TerraformStack {
           APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
           APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
           RATE_LIMIT_PER_MINUTE: process.env.RATE_LIMIT_PER_MINUTE!,
-        },
-        depandOn: cloudFunctionDeploymentConstruct.services,
+        }
       }
     );
 
