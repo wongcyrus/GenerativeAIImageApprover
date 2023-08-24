@@ -1,0 +1,50 @@
+{
+	"image": "mcr.microsoft.com/devcontainers/universal:2",
+	"features": {
+		"ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers-contrib/features/typescript:2": {
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/python:1": {},
+		"ghcr.io/dhoeric/features/google-cloud-cli:1": {}
+	},
+	"customizations": {
+		"codespaces": {
+			"openFiles": []
+		},
+		"vscode": {
+			"settings": {
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.testing.pytestArgs": [],
+				"python.testing.unittestEnabled": false,
+				"python.testing.pytestEnabled": true,
+				"pylint.args": [
+					"--disable=C0111"
+				],
+				"files.autoSave": "afterDelay",
+				"files.autoSaveDelay": 3000,
+				"editor.formatOnSave": true,
+				"editor.formatOnType": false,
+				"editor.defaultFormatter": "ms-python.autopep8",
+				"[jsonc]": {
+					"editor.defaultFormatter": "vscode.json-language-features"
+				}
+			},
+			// Add the IDs of extensions you want installed when the container is created.
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",		
+				"ms-python.autopep8",
+				"ms-python.pylint",				
+				"github.copilot",
+				"ms-vscode.vscode-typescript-next",		
+				"googlecloudtools.cloudcode"
+			]
+		},
+		"settings": {
+			"python.defaultInterpreterPath": "~/.python/current/bin/python3"
+		}
+	}
+}
