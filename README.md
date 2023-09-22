@@ -17,7 +17,7 @@ RATE_LIMIT_PER_MINUTE=Control the number of images genrerate by email.
 REGION1=Deployment Region (asia-east1)
 GOOGLE_APPLICATION_CREDENTIALS=/home/codespace/.config/gcloud/application_default_credentials.json
 ```
-2. Login your GCP account ```gcloud auth application-default login```
+2. Login your GCP account ```gcloud auth application-default login``` and ```gcloud auth application-default set-quota-project```
 3. Run ```./deploy.sh```
 4. You will get error ```Error waiting to create function: Error waiting for Creating function: Error code 7, message: Unable to retrieve the repository metadata for..```
 And, it is known bug https://github.com/firebase/firebase-tools/issues/5244, and it will work when you retry.

@@ -2,25 +2,63 @@
 import datetime
 from datetime import timezone
 import os
+import tempfile
 import requests
 from flask import escape
 import functions_framework
 import smtplib
 from email.mime.text import MIMEText
 from google.cloud import datastore
+import qrcode
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
 
 
-def send_email(subject, body, sender, recipients, password):
-    msg = MIMEText(body)
-    msg['Subject'] = subject
-    msg['From'] = sender
-    msg['To'] = ', '.join(recipients)
+def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password):
+
+    msgRoot = MIMEMultipart('related')
+    msgRoot['Subject'] = subject
+    msgRoot['From'] = sender
+    msgRoot['To'] = ', '.join(recipients)
+
+    msgHtml = MIMEText(body, 'html')
+  
+    # Define the image's ID as referenced in the HTML body above
+    img = open(gen_image_path, 'rb').read()
+    msgImg1 = MIMEImage(img, 'png')
+    msgImg1.add_header('Content-ID', '<image1>')
+    msgImg1.add_header('Content-Disposition', 'inline', filename="qrcode.png")
+
+    img = open(qrcode_image_path, 'rb').read()
+    msgImg2 = MIMEImage(img, 'png')
+    msgImg2.add_header('Content-ID', '<image2>')
+    msgImg2.add_header('Content-Disposition', 'inline', filename="qrcode.png")
+
+    msgRoot.attach(msgHtml)
+    msgRoot.attach(msgImg1)
+    msgRoot.attach(msgImg2)
+
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
        smtp_server.login(sender, password)
-       smtp_server.sendmail(sender, recipients, msg.as_string())
+       smtp_server.sendmail(sender, recipients, msgRoot.as_string())
     print("Message sent!")
 
-
+def generate_qrcode(public_url):
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(public_url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+    qrcode_image_path = tempfile.NamedTemporaryFile(suffix='.png').name
+    img.save(qrcode_image_path)
+    return qrcode_image_path
+    
 @functions_framework.http
 def approvalimage(request):
     """HTTP Cloud Function.
@@ -61,18 +99,34 @@ def approvalimage(request):
     if is_gen_image_job_approvaed(email, public_url):
         return "Already approved!", 200, headers
 
+    # Download the image from the URL public_url and save it to a temporary file
+    response = requests.get(public_url)
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(response.content)
+        gen_image_path = f.name
+
+    qrcode_image_path = generate_qrcode(public_url)
+
     subject = "Your Gen Image at " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    body = f"""
-Check out your generated image at
-
-{public_url}
-
+    body = f"""<html>
+<body>
+    <p>
+        Check out your generated image at: <br/>
+        <img src="cid:image1"><br/>
+        {public_url}
+    </p>
+    <p>
+        Scan this QR Code: <br/>
+        <img src="cid:image2">
+    </p>
+</body>
+</html> 
 """
     sender = os.getenv("GMAIL")
     recipients = [email]
     password = os.getenv("APP_PASSWORD")
 
-    send_email(subject, body, sender, recipients, password)
+    send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password)
 
     update_gen_image_job(email, public_url, approver_email)
                   
