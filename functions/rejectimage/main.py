@@ -2,7 +2,6 @@
 import datetime
 from datetime import timezone
 import os
-import tempfile
 import requests
 from flask import escape
 import functions_framework
@@ -12,11 +11,9 @@ from google.cloud import datastore
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
 
 
 def send_email(subject, body, sender, recipients, password):
-
     msgRoot = MIMEMultipart('related')
     msgRoot['Subject'] = subject
     msgRoot['From'] = sender
@@ -30,19 +27,6 @@ def send_email(subject, body, sender, recipients, password):
        smtp_server.sendmail(sender, recipients, msgRoot.as_string())
     print("Message sent!")
 
-def generate_qrcode(public_url):
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(public_url)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    qrcode_image_path = tempfile.NamedTemporaryFile(suffix='.png').name
-    img.save(qrcode_image_path)
-    return qrcode_image_path
     
 @functions_framework.http
 def rejectimage(request):

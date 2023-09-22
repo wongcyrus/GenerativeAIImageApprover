@@ -4,8 +4,6 @@
     <h1>Gen Image</h1>
     <!-- Simple form with 2 field email and prompt is text area -->
     <form action="" method="post">
-      <label for="email">Email:</label><br />
-      <input type="email" id="email" name="email" required /><br /><br />
       <label for="prompt">Prompt:</label><br />
       <textarea id="prompt" name="prompt" rows="8" cols="50" required></textarea
       ><br /><br />
@@ -17,16 +15,17 @@
       const urlParams = new URLSearchParams(queryString);
       const api = urlParams.get("api");
       const key = urlParams.get("key");
+      const emailhash = urlParams.get("emailhash");
       //When click on genimage, disable default submit, and send ajax get request to api.
       // with parameters key, email and prompt.
 
       const genButton = document.getElementById("genimage");
       genButton.addEventListener("click", function (event) {
         event.preventDefault();
-        var email = document.getElementById("email").value;
+
         var prompt = document.getElementById("prompt").value;
         // urlencoded email and prompt
-        email = encodeURIComponent(email);
+        var emailhash = encodeURIComponent(emailhash);
         prompt = encodeURIComponent(prompt);
 
         // Disable genimage for 15 seconds
@@ -42,7 +41,7 @@
         };
         xhttp.open(
           "GET",
-          api + "?key=" + key + "&email=" + email + "&prompt=" + prompt,
+          api + "?key=" + key + "&emailhash=" + emailhash + "&prompt=" + prompt,
           true
         );
         xhttp.send();

@@ -123,6 +123,7 @@ class ImageGenStack extends TerraformStack {
         cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
         environmentVariables: {
           SECRET_KEY: process.env.SECRET_KEY!,
+          ENCRYPT_KEY: process.env.ENCRYPT_KEY!,
           OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
           IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
           GMAIL: process.env.GMAIL!,

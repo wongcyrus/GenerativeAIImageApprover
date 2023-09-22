@@ -15,6 +15,9 @@ import urllib.parse
 from google.cloud import datastore
 import datetime
 from datetime import timezone
+import re
+from cryptography.fernet import Fernet
+
 
 openai.api_type = "azure"
 openai.api_base = "https://eastus.api.cognitive.microsoft.com/"
@@ -22,6 +25,17 @@ openai.api_version = "2023-06-01-preview"
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 IMAGE_BUCKET = os.getenv("IMAGE_BUCKET")
+
+def is_valid_email(email):
+    # Define a regular expression pattern for a valid email address
+    pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
+
+    # Use the re module to match the pattern against the email address
+    if re.match(pattern, email):
+        return True
+    else:
+        return False
+
 
 @functions_framework.http
 def genimage(request):
@@ -55,12 +69,17 @@ def genimage(request):
 
     key = request_args["key"]
     prompt = request_args["prompt"]
-    email = request_args["email"]
-    print(f"email: {email}")
+    emailhash = request_args["emailhash"]
 
     if key != os.getenv("SECRET_KEY"):
         return "Unauthorized", 401, headers
     
+    fernet = Fernet(os.getenv("ENCRYPT_KEY"))
+    email = fernet.decrypt(emailhash).decode()   
+    if not is_valid_email(email):
+        return "Invalid encrypted email!", 401, headers
+    print(f"email: {email}")   
+
     if is_gen_image_job_exceed_rate_limit(email):
         return "Rate limit exceeded, and please wait for 30s!", 200, headers
     save_new_gen_image_job(email, prompt)
