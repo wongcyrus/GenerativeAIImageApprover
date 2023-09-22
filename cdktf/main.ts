@@ -90,6 +90,26 @@ class ImageGenStack extends TerraformStack {
       }
     );
 
+    
+    const rejectImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
+      this,
+      "rejectimage",
+      {
+        functionName: "rejectimage",
+        runtime: "python311",
+        entryPoint: "rejectimage",
+        timeout: 600,
+        availableMemory: "512Mi",
+        makePublic: true,
+        cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
+        environmentVariables: {
+          SECRET_KEY: process.env.SECRET_KEY!,
+          GMAIL: process.env.GMAIL!,
+          APP_PASSWORD: process.env.APP_PASSWORD!,
+        }
+      }
+    );
+
     const genImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
       this,
       "genimage",
@@ -108,6 +128,7 @@ class ImageGenStack extends TerraformStack {
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
           APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
+          REJECT_URL: rejectImagecloudFunctionConstruct.cloudFunction.url,
           APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
           RATE_LIMIT_PER_MINUTE: process.env.RATE_LIMIT_PER_MINUTE!,
         }
@@ -121,6 +142,11 @@ class ImageGenStack extends TerraformStack {
     await DatastoreConstruct.create(this, "approvalImagedatastore", {
       project: project.projectId,
       servicesAccount: approvalImagecloudFunctionConstruct.serviceAccount,
+    });
+
+    await DatastoreConstruct.create(this, "rejectImagedatastore", {
+      project: project.projectId,
+      servicesAccount: rejectImagecloudFunctionConstruct.serviceAccount,
     });
 
     new GoogleDatastoreIndex(this, "datastore-index", {

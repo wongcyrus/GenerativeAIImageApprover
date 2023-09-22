@@ -9,36 +9,21 @@ import functions_framework
 import smtplib
 from email.mime.text import MIMEText
 from google.cloud import datastore
-import qrcode
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 
 
-def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password):
+def send_email(subject, body, sender, recipients, password):
 
     msgRoot = MIMEMultipart('related')
     msgRoot['Subject'] = subject
     msgRoot['From'] = sender
     msgRoot['To'] = ', '.join(recipients)
 
-    msgHtml = MIMEText(body, 'html')
-  
-    # Define the image's ID as referenced in the HTML body above
-    img = open(gen_image_path, 'rb').read()
-    msgImg1 = MIMEImage(img, 'png')
-    msgImg1.add_header('Content-ID', '<image1>')
-    msgImg1.add_header('Content-Disposition', 'inline', filename="qrcode.png")
-
-    img = open(qrcode_image_path, 'rb').read()
-    msgImg2 = MIMEImage(img, 'png')
-    msgImg2.add_header('Content-ID', '<image2>')
-    msgImg2.add_header('Content-Disposition', 'inline', filename="qrcode.png")
-
+    msgHtml = MIMEText(body, 'html')  
     msgRoot.attach(msgHtml)
-    msgRoot.attach(msgImg1)
-    msgRoot.attach(msgImg2)
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
        smtp_server.login(sender, password)
@@ -60,7 +45,7 @@ def generate_qrcode(public_url):
     return qrcode_image_path
     
 @functions_framework.http
-def approvalimage(request):
+def rejectimage(request):
     """HTTP Cloud Function.
     Args:
         request (flask.Request): The request object.
@@ -99,26 +84,13 @@ def approvalimage(request):
     if is_gen_image_job_approvaed_or_rejected(email, public_url):
         return "Already approved or rejected!", 200, headers
 
-    # Download the image from the URL public_url and save it to a temporary file
-    response = requests.get(public_url)
-    with tempfile.NamedTemporaryFile(delete=False) as f:
-        f.write(response.content)
-        gen_image_path = f.name
 
-    qrcode_image_path = generate_qrcode(public_url)
-
-    subject = "Your Gen Image at " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    subject = "Sorry your Gen Image at " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + " is not good!" 
     body = f"""<html>
 <body>
     <p>
-        Check out your generated image at: <br/>
-        <img src="cid:image1"><br/>
-        {public_url}
-    </p>
-    <p>
-        Scan this QR Code: <br/>
-        <img src="cid:image2">
-    </p>
+       Sorry, please try another prompt!
+    </p> 
 </body>
 </html> 
 """
@@ -126,21 +98,11 @@ def approvalimage(request):
     recipients = [email]
     password = os.getenv("APP_PASSWORD")
 
-    send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password)
-
-    update_gen_image_job(email, public_url, approver_email)
+    send_email(subject, body, sender, recipients, password)   
                   
-    return "Approved!", 200, headers
+    return "Rejected!", 200, headers
     
-def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
-    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
-    with client.transaction():
-        key = client.key('GenImageJob', email + "->" +image_url)
-        entity = client.get(key)  
-        entity['approver_email'] = approver_email
-        entity['status'] = "APPROVAED"
-        entity['modify_time'] = datetime.datetime.now(timezone.utc);   
-        client.put(entity)
+
 
 def is_gen_image_job_approvaed_or_rejected(email: str, image_url:str) -> str:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))

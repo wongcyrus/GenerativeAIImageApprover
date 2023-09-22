@@ -122,15 +122,20 @@ def send_email(subject:str, params:dict, sender:str, recipients:list[str], passw
 
 def get_email_body(params:dict) -> str:    
     approval_url = os.getenv("APPROVAL_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
+    reject_url = os.getenv("REJECT_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
+
     body= f"""
-    Please check the following image and click the link to approve it.
+Please check the following image and click the link to approve it.
 
-    {params["public_url"]}
+{params["public_url"]}
 
-    Approve: 
+Approve: 
+{approval_url}
 
-    {approval_url}
 
+
+Reject:
+{reject_url}
     """
     return body
 
