@@ -60,7 +60,7 @@ def emailhash(request):
         url = f"{url}&reviewer_emailhash={reviewer_emailhash}"
 
     # Caching issue.
-    url = f"{url}&now={datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+    url = f"{url}&now={datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
     # print(url)
     result = f"""
 Receiver: {email}
