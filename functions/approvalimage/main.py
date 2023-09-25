@@ -7,7 +7,6 @@ import requests
 from flask import escape
 import functions_framework
 import smtplib
-from email.mime.text import MIMEText
 from google.cloud import datastore
 import qrcode
 
@@ -29,7 +28,7 @@ def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipie
     img = open(gen_image_path, 'rb').read()
     msgImg1 = MIMEImage(img, 'png')
     msgImg1.add_header('Content-ID', '<image1>')
-    msgImg1.add_header('Content-Disposition', 'inline', filename="qrcode.png")
+    msgImg1.add_header('Content-Disposition', 'inline', filename="genimage.png")
 
     img = open(qrcode_image_path, 'rb').read()
     msgImg2 = MIMEImage(img, 'png')

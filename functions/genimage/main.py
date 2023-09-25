@@ -10,13 +10,18 @@ import functions_framework
 from google.cloud import storage
 
 import smtplib
-from email.mime.text import MIMEText
 import urllib.parse
 from google.cloud import datastore
 import datetime
 from datetime import timezone
 import re
 from cryptography.fernet import Fernet
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+
+import tempfile
 
 
 openai.api_type = "azure"
@@ -102,7 +107,7 @@ def genimage(request):
 
     params = {'key':key, 'email': email, 'public_url': public_url}
     update_gen_image_job(email, public_url);
-    send_email(subject, params, sender, recipients, password)   
+    send_email(subject, sender, recipients, password, params)   
                   
     return "Please check your email!", 200, headers
     
@@ -125,38 +130,57 @@ def upload_image_to_bucket(image_path):
     blob.upload_from_filename(image_path)
     return blob.public_url
     
-def send_email(subject:str, params:dict, sender:str, recipients:list[str], password:str):
+def send_email(subject:str,sender:str, recipients:list[str], password:str, params:dict):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
         smtp_server.login(sender, password)   
         for recipient in recipients:            
             params['approver_email'] = recipient
-            body = get_email_body(params)
-            msg = MIMEText(body)
-            msg['Subject'] = subject
-            msg['From'] = sender
-            msg['To'] = recipient
-            smtp_server.sendmail(sender, recipient, msg.as_string())
+            body = get_email_msg(subject, sender, recipient, params)
+            smtp_server.sendmail(sender, recipient, body)
      
     print("Message sent!")
 
-def get_email_body(params:dict) -> str:    
+def get_email_msg(subject:str, sender:str, recipient:str,params:dict) -> str:    
     approval_url = os.getenv("APPROVAL_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
     reject_url = os.getenv("REJECT_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
+    public_url = params["public_url"]
 
     body= f"""
 Please check the following image and click the link to approve it.
-
-{params["public_url"]}
-
-Approve: 
+<br/>
+<img src="cid:image1"><br/>
+{public_url}
+<br/>
+<br/>
+Approve: <br/>
 {approval_url}
-
-
-
-Reject:
+<br/>
+<br/>
+Reject:<br/>
 {reject_url}
     """
-    return body
+
+    msgRoot = MIMEMultipart('related')
+    msgRoot['Subject'] = subject
+    msgRoot['From'] = sender
+    msgRoot['To'] = recipient
+
+    msgHtml = MIMEText(body, 'html')
+  
+    # Define the image's ID as referenced in the HTML body above   
+    response = requests.get(public_url)
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(response.content)
+        gen_image_path = f.name
+    img = open(gen_image_path, 'rb').read()
+    msgImg1 = MIMEImage(img, 'png')
+    msgImg1.add_header('Content-ID', '<image1>')
+    msgImg1.add_header('Content-Disposition', 'inline', filename="genimage.png")
+  
+    msgRoot.attach(msgHtml)
+    msgRoot.attach(msgImg1)
+
+    return msgRoot.as_string()
 
 def save_new_gen_image_job(email: str, prompt:str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))

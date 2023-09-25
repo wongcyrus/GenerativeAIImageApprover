@@ -1,51 +1,79 @@
-<html>
-  <head> </head>
-  <body>
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+
+  <title>Gen Image</title>
+</head>
+
+<body>
+  <div class="container">
     <h1>Gen Image</h1>
     <!-- Simple form with 2 field email and prompt is text area -->
     <form action="" method="post">
-      <label for="prompt">Prompt:</label><br />
-      <textarea id="prompt" name="prompt" rows="8" cols="50" required></textarea
-      ><br /><br />
-      <input id="genimage" type="submit" value="Gen Image" />
+
+      <div class="form-group">
+        <label for="prompt">Prompt:</label>
+        <textarea id="prompt" class="form-control" name="prompt" rows="10" cols="100" required
+          aria-describedby="promptHelp" placeholder="Write your prompt here..."></textarea>
+        <small id="promptHelp" class="form-text text-muted">Please describe what you want AI to draw.</small>
+      </div>
+      <input id="genimage" type="submit" value="Gen Image" class="btn btn-primary" />
     </form>
-    <script>
-      // get url query string: api and key
+  </div>
+  <script>
+    //When click on genimage, disable default submit, and send ajax get request to api.
+    // with parameters key, email and prompt.
+    const genButton = document.getElementById("genimage");
+    genButton.addEventListener("click", function (event) {
+      event.preventDefault();
+      let prompt = document.getElementById("prompt").value;
+      if (prompt.length < 1) {
+        alert("Please enter your prompt");
+        return;
+      }
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       const api = urlParams.get("api");
       const key = urlParams.get("key");
-      const emailhash = urlParams.get("emailhash");
-      //When click on genimage, disable default submit, and send ajax get request to api.
-      // with parameters key, email and prompt.
+      // urlencoded email and prompt   
+      const emailhash = encodeURIComponent(urlParams.get("emailhash"));
+      prompt = encodeURIComponent(prompt);
 
-      const genButton = document.getElementById("genimage");
-      genButton.addEventListener("click", function (event) {
-        event.preventDefault();
+      // Disable genimage for 15 seconds
+      genButton.disabled = true;
+      setTimeout(function () {
+        genButton.disabled = false;
+      }, 15000);
+      const xhttp = new XMLHttpRequest();
+      xhttp.onreadystatechange = function () {
+        if (this.readyState == 4 && this.status == 200) {
+          alert(this.responseText);
+        }
+      };
+      xhttp.open(
+        "GET",
+        api + "?key=" + key + "&emailhash=" + emailhash + "&prompt=" + prompt,
+        true
+      );
+      xhttp.send();
+    });
+  </script>
+  <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+    integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js"
+    integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js"
+    integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+    crossorigin="anonymous"></script>
+</body>
 
-        var prompt = document.getElementById("prompt").value;
-        // urlencoded email and prompt
-        var emailhash = encodeURIComponent(emailhash);
-        prompt = encodeURIComponent(prompt);
-
-        // Disable genimage for 15 seconds
-        genButton.disabled = true;
-        setTimeout(function () {
-          genButton.disabled = false;
-        }, 15000);
-        var xhttp = new XMLHttpRequest();
-        xhttp.onreadystatechange = function () {
-          if (this.readyState == 4 && this.status == 200) {
-            alert(this.responseText);
-          }
-        };
-        xhttp.open(
-          "GET",
-          api + "?key=" + key + "&emailhash=" + emailhash + "&prompt=" + prompt,
-          true
-        );
-        xhttp.send();
-      });
-    </script>
-  </body>
 </html>

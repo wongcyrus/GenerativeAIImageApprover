@@ -90,7 +90,7 @@ class ImageGenStack extends TerraformStack {
       }
     );
 
-    
+
     const rejectImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
       this,
       "rejectimage",
@@ -132,6 +132,26 @@ class ImageGenStack extends TerraformStack {
           REJECT_URL: rejectImagecloudFunctionConstruct.cloudFunction.url,
           APPROVER_EMAILS: process.env.APPROVER_EMAILS!,
           RATE_LIMIT_PER_MINUTE: process.env.RATE_LIMIT_PER_MINUTE!,
+        }
+      }
+    );
+
+    const emailhashcloudFunctionConstruct = await CloudFunctionConstruct.create(
+      this,
+      "emailhash",
+      {
+        functionName: "emailhash",
+        runtime: "python311",
+        entryPoint: "emailhash",
+        timeout: 600,
+        availableMemory: "512Mi",
+        makePublic: true,
+        cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
+        environmentVariables: {
+          SECRET_KEY: process.env.SECRET_KEY!,
+          ENCRYPT_KEY: process.env.ENCRYPT_KEY!,
+          IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
+          GEN_IMAGE_URL: genImagecloudFunctionConstruct.cloudFunction.url,
         }
       }
     );
@@ -181,6 +201,10 @@ class ImageGenStack extends TerraformStack {
         process.env.SECRET_KEY! +
         "&api=" +
         genImagecloudFunctionConstruct.cloudFunction.url,
+    });
+
+    new TerraformOutput(this, "emailhash-url", {
+      value: emailhashcloudFunctionConstruct.cloudFunction.url + "?key=" + process.env.SECRET_KEY! + "&email=",
     });
   }
   constructor(scope: Construct, id: string) {
