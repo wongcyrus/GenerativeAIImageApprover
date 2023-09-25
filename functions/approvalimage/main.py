@@ -129,7 +129,7 @@ def approvalimage(request):
 
     update_gen_image_job(email, public_url, approver_email)
                   
-    return "Approved!", 200, headers
+    return "Approved and sent to " + email, 200, headers
     
 def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))

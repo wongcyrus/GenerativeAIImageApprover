@@ -84,7 +84,7 @@ def rejectimage(request):
 
     send_email(subject, body, sender, recipients, password)   
                   
-    return "Rejected!", 200, headers
+    return "Rejected and sent to " + email, 200, headers
     
 
 

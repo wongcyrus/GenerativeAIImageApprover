@@ -102,6 +102,14 @@ def genimage(request):
     approver_emails = os.getenv("APPROVER_EMAILS").split(",")
     subject = "Verify Gen Image for "+ email
     sender = os.getenv("GMAIL")
+
+    if reviewer_emailhash := request_args.get("reviewer_emailhash"):
+        reviewer_email = fernet.decrypt(reviewer_emailhash).decode()
+        if is_valid_email(reviewer_email):
+            approver_emails.append(reviewer_email)
+    # remove duplicate emails
+    approver_emails = list(dict.fromkeys(approver_emails)) 
+        
     recipients = approver_emails
     password = os.getenv("APP_PASSWORD")
 

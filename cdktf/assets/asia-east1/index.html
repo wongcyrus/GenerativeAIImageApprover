@@ -44,6 +44,7 @@
       const key = urlParams.get("key");
       // urlencoded email and prompt   
       const emailhash = encodeURIComponent(urlParams.get("emailhash"));
+      const reviewer_emailhash = encodeURIComponent(urlParams.get("reviewer_emailhash"));
       prompt = encodeURIComponent(prompt);
 
       // Disable genimage for 15 seconds
@@ -59,7 +60,7 @@
       };
       xhttp.open(
         "GET",
-        api + "?key=" + key + "&emailhash=" + emailhash + "&prompt=" + prompt,
+        api + "?key=" + key + "&emailhash=" + emailhash + "&reviewer_emailhash=" + reviewer_emailhash + "&prompt=" + prompt,
         true
       );
       xhttp.send();

@@ -204,7 +204,7 @@ class ImageGenStack extends TerraformStack {
     });
 
     new TerraformOutput(this, "emailhash-url", {
-      value: emailhashcloudFunctionConstruct.cloudFunction.url + "?key=" + process.env.SECRET_KEY! + "&email=",
+      value: emailhashcloudFunctionConstruct.cloudFunction.url + "?key=" + process.env.SECRET_KEY! + "&email=xxx&reviewer_email=abcd",
     });
   }
   constructor(scope: Construct, id: string) {
