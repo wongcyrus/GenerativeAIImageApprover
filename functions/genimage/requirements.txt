@@ -1,5 +1,6 @@
 functions-framework==3.*
 google-cloud-storage
 google-cloud-datastore
-openai
+google-cloud-aiplatform
 cryptography
+Pillow

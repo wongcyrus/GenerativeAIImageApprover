@@ -4,7 +4,6 @@ from pathlib import Path
 
 import requests
 from flask import escape
-import openai
 
 import functions_framework
 from google.cloud import storage
@@ -23,11 +22,11 @@ from email.mime.image import MIMEImage
 
 import tempfile
 
+import vertexai
+from vertexai.preview.vision_models import Image, ImageGenerationModel
 
-openai.api_type = "azure"
-openai.api_base = "https://eastus.api.cognitive.microsoft.com/"
-openai.api_version = "2023-06-01-preview"
-openai.api_key = os.getenv("OPENAI_API_KEY")
+vertexai.init(project=os.getenv("GCP_PROJECT"), location=os.getenv("MODEL_GARDEN_REGION"))
+
 
 IMAGE_BUCKET = os.getenv("IMAGE_BUCKET")
 
@@ -88,14 +87,18 @@ def genimage(request):
     if is_gen_image_job_exceed_rate_limit(email):
         return "Rate limit exceeded, and please wait for 30s!", 200, headers
     save_new_gen_image_job(email, prompt)
-    response = openai.Image.create(
-        prompt=prompt,
-        size='1024x1024',
-        n=1
-    )
-    image_url = response["data"][0]["url"]
 
-    image_path =download_image(image_url)
+    model = ImageGenerationModel.from_pretrained("imagegeneration@002")
+    images1 = model.generate_images(
+        prompt=prompt,  
+        number_of_images=1,
+        seed=1
+    )
+
+    image_name = "image-"+str(hash(prompt))+ ".png"
+    image_path = f"/tmp/{image_name}"
+    images1[0].save(location=image_path, include_generation_parameters=True)
+
     public_url = upload_image_to_bucket(image_path)
 
     params = {'key':key, 'email': email, 'public_url': public_url}

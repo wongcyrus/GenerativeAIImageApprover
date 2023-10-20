@@ -9,12 +9,13 @@ When holding a workshop on generative AI images, students are full of creativity
 PROJECTID=Your GCP project gonna to be created
 BillING_ACCOUNT=Billing Account
 SECRET_KEY=Use it for simple Authentication
-OPENAI_API_KEY=Open AI key that can generate image.
+ENCRYPT_KEY=encrypt email key and please use email_hash_generator.py to generate it.
 GMAIL=Use it to send email
 APP_PASSWORD=Gmail App password from https://support.google.com/accounts/answer/185833?hl=en 
 APPROVER_EMAILS=List of email seperated by comma and they will receive email to review and approve the generated images.
 RATE_LIMIT_PER_MINUTE=Control the number of images genrerate by email.
-REGION1=Deployment Region (asia-east1)
+MODEL_GARDEN_REGION=
+REGION=Deployment Region (asia-east1)
 GOOGLE_APPLICATION_CREDENTIALS=/home/codespace/.config/gcloud/application_default_credentials.json
 ```
 2. Login your GCP account ```gcloud auth application-default login``` and ```gcloud auth application-default set-quota-project```
