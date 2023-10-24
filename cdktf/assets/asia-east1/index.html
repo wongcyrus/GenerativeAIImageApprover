@@ -22,6 +22,9 @@
         <label for="prompt">Prompt:</label>
         <textarea id="prompt" class="form-control" name="prompt" rows="10" cols="100" required
           aria-describedby="promptHelp" placeholder="Write your prompt here..."></textarea>
+        <label for="prompt">Negative Prompt:</label>
+        <textarea id="negativePrompt" class="form-control" name="negativePrompt" rows="5" cols="100" required
+          aria-describedby="negativePromptHelp" placeholder="Write your negative prompt here..."></textarea>
         <small id="promptHelp" class="form-text text-muted">Please describe what you want AI to draw.</small>
       </div>
       <input id="genimage" type="submit" value="Gen Image" class="btn btn-primary" />
@@ -34,6 +37,8 @@
     genButton.addEventListener("click", function (event) {
       event.preventDefault();
       let prompt = document.getElementById("prompt").value;
+      let negativePrompt = document.getElementById("negativePrompt").value;
+
       if (prompt.length < 1) {
         alert("Please enter your prompt");
         return;
@@ -46,6 +51,7 @@
       const emailhash = encodeURIComponent(urlParams.get("emailhash"));
       const reviewer_emailhash = encodeURIComponent(urlParams.get("reviewer_emailhash"));
       prompt = encodeURIComponent(prompt);
+      negativePrompt = encodeURIComponent(negativePrompt);
 
       // Disable genimage for 15 seconds
       genButton.disabled = true;
@@ -60,7 +66,7 @@
       };
       xhttp.open(
         "GET",
-        api + "?key=" + key + "&emailhash=" + emailhash + "&reviewer_emailhash=" + reviewer_emailhash + "&prompt=" + prompt,
+        api + "?key=" + key + "&emailhash=" + emailhash + "&reviewer_emailhash=" + reviewer_emailhash + "&prompt=" + prompt + "&negativePrompt=" + negativePrompt,
         true
       );
       xhttp.send();

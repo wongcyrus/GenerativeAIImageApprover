@@ -73,6 +73,7 @@ def genimage(request):
 
     key = request_args["key"]
     prompt = request_args["prompt"]
+    negative_prompt = request_args["negativePrompt"]
     emailhash = request_args["emailhash"]
 
     if key != os.getenv("SECRET_KEY"):
@@ -86,18 +87,19 @@ def genimage(request):
 
     if is_gen_image_job_exceed_rate_limit(email):
         return "Rate limit exceeded, and please wait for 30s!", 200, headers
-    save_new_gen_image_job(email, prompt)
+    save_new_gen_image_job(email, prompt, negative_prompt)
 
     model = ImageGenerationModel.from_pretrained("imagegeneration@002")
-    images1 = model.generate_images(
-        prompt=prompt,  
+    images = model.generate_images(
+        prompt=prompt,
+        negative_prompt=negative_prompt,
         number_of_images=1,
         seed=1
     )
 
     image_name = "image-"+str(hash(prompt))+ ".png"
     image_path = f"/tmp/{image_name}"
-    images1[0].save(location=image_path, include_generation_parameters=True)
+    images[0].save(location=image_path, include_generation_parameters=True)
 
     public_url = upload_image_to_bucket(image_path)
 
@@ -193,14 +195,15 @@ Reject:<br/>
 
     return msgRoot.as_string()
 
-def save_new_gen_image_job(email: str, prompt:str) -> bool:
+def save_new_gen_image_job(email: str, prompt:str, negative_prompt:str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     key = client.key('GenImageJob', email)
     entity = datastore.Entity(key=key)
     now = datetime.datetime.now(timezone.utc);
     entity.update({
         'email': email,
-        'prompt': prompt ,      
+        'prompt': prompt ,
+        'negative_prompt':negative_prompt,
         'status': "GENERATING_IMAGE",
         'create_time': now,
         'modify_time': now 
@@ -215,7 +218,8 @@ def update_gen_image_job(email: str, image_url:str) -> bool:
         entity = datastore.Entity(key=client.key('GenImageJob', email + "->" +image_url))
         entity.update({
         'email': email,
-        'prompt': old_entity['prompt'] ,      
+        'prompt': old_entity['prompt'] ,
+        'negative_prompt': old_entity['negative_prompt'],
         'status': "WAITING_FOR_APPROVAL",
         'create_time': old_entity['create_time'],
         'modify_time': datetime.datetime.now(timezone.utc) 
