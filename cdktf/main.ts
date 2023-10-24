@@ -14,6 +14,8 @@ import { CloudFunctionConstruct } from "./components/cloud-function-construct";
 import { DatastoreConstruct } from "./components/datastore-construct";
 import { GoogleStorageBucketIamMember } from "./.gen/providers/google-beta/google-storage-bucket-iam-member";
 import { GoogleDatastoreIndex } from "./.gen/providers/google-beta/google-datastore-index";
+import { GoogleProjectIamMember } from "./.gen/providers/google-beta/google-project-iam-member";
+import { GoogleProjectService } from "./.gen/providers/google-beta/google-project-service";
 
 dotenv.config();
 
@@ -41,17 +43,17 @@ class ImageGenStack extends TerraformStack {
     });
     const staticSitePattern1 = new StaticSitePattern(this, "static-site1", {
       project: project.projectId,
-      region: process.env.REGION1!,
+      region: process.env.REGION!,
       indexPagePath: path.join(
         __dirname,
         "assets",
-        process.env.REGION1!,
+        process.env.REGION!,
         "index.html"
       ),
       notFoundPagePath: path.join(
         __dirname,
         "assets",
-        process.env.REGION1!,
+        process.env.REGION!,
         "404.html"
       ),
       randomProvider: randomProvider,
@@ -62,7 +64,7 @@ class ImageGenStack extends TerraformStack {
       "cloud-function-deployment",
       {
         project: project.projectId,
-        region: process.env.REGION1!,
+        region: process.env.REGION!,
         archiveProvider: archiveProvider,
         randomProvider: randomProvider,
       }
@@ -110,6 +112,11 @@ class ImageGenStack extends TerraformStack {
       }
     );
 
+    new GoogleProjectService(this, "aiplatformService", {
+      project: project.id,
+      service: "aiplatform.googleapis.com",
+      disableOnDestroy: false,
+    });
     const genImagecloudFunctionConstruct = await CloudFunctionConstruct.create(
       this,
       "genimage",
@@ -124,7 +131,7 @@ class ImageGenStack extends TerraformStack {
         environmentVariables: {
           SECRET_KEY: process.env.SECRET_KEY!,
           ENCRYPT_KEY: process.env.ENCRYPT_KEY!,
-          OPENAI_API_KEY: process.env.OPENAI_API_KEY!,
+          MODEL_GARDEN_REGION: process.env.MODEL_GARDEN_REGION!,
           IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
@@ -191,6 +198,14 @@ class ImageGenStack extends TerraformStack {
       role: "roles/storage.legacyBucketWriter",
       member:
         "serviceAccount:" + genImagecloudFunctionConstruct.serviceAccount.email,
+    });
+
+
+
+    new GoogleProjectIamMember(this, "DatastoreProjectIamMember", {
+      project: project.id,
+      role: "roles/aiplatform.user",
+      member: "serviceAccount:" + genImagecloudFunctionConstruct.serviceAccount.email,
     });
 
     new TerraformOutput(this, "gen-image-url", {
