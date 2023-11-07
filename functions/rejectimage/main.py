@@ -83,7 +83,7 @@ def rejectimage(request):
     password = os.getenv("APP_PASSWORD")
 
     send_email(subject, body, sender, recipients, password)   
-                  
+    update_gen_image_job(email, public_url, approver_email)                  
     return "Rejected and sent to " + email, 200, headers
     
 
@@ -92,3 +92,13 @@ def is_gen_image_job_approvaed_or_rejected(email: str, image_url:str) -> str:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     student = client.get(client.key('GenImageJob', email + "->" +image_url))
     return student['status'] == "APPROVAED" or student['status'] == "REJECTED"
+
+def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
+    client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
+    with client.transaction():
+        key = client.key('GenImageJob', email + "->" +image_url)
+        entity = client.get(key)  
+        entity['approver_email'] = approver_email
+        entity['status'] = "REJECTED"
+        entity['modify_time'] = datetime.datetime.now(timezone.utc);   
+        client.put(entity)

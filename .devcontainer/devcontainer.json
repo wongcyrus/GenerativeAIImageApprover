@@ -16,7 +16,7 @@
 		},
 		"vscode": {
 			"settings": {
-				"python.defaultInterpreterPath": "/usr/local/bin/python",
+				"python.defaultInterpreterPath": "~/.python/current/bin/python3",
 				"python.testing.pytestArgs": [],
 				"python.testing.unittestEnabled": false,
 				"python.testing.pytestEnabled": true,
@@ -35,11 +35,11 @@
 			// Add the IDs of extensions you want installed when the container is created.
 			"extensions": [
 				"ms-python.python",
-				"ms-python.vscode-pylance",		
+				"ms-python.vscode-pylance",
 				"ms-python.autopep8",
-				"ms-python.pylint",				
+				"ms-python.pylint",
 				"github.copilot",
-				"ms-vscode.vscode-typescript-next",		
+				"ms-vscode.vscode-typescript-next",
 				"googlecloudtools.cloudcode"
 			]
 		},
