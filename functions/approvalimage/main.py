@@ -4,7 +4,6 @@ from datetime import timezone
 import os
 import tempfile
 import requests
-from flask import escape
 import functions_framework
 import smtplib
 from google.cloud import datastore
@@ -23,12 +22,13 @@ def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipie
     msgRoot['To'] = ', '.join(recipients)
 
     msgHtml = MIMEText(body, 'html')
-  
+
     # Define the image's ID as referenced in the HTML body above
     img = open(gen_image_path, 'rb').read()
     msgImg1 = MIMEImage(img, 'png')
     msgImg1.add_header('Content-ID', '<image1>')
-    msgImg1.add_header('Content-Disposition', 'inline', filename="genimage.png")
+    msgImg1.add_header('Content-Disposition', 'inline',
+                       filename="genimage.png")
 
     img = open(qrcode_image_path, 'rb').read()
     msgImg2 = MIMEImage(img, 'png')
@@ -40,9 +40,10 @@ def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipie
     msgRoot.attach(msgImg2)
 
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
-       smtp_server.login(sender, password)
-       smtp_server.sendmail(sender, recipients, msgRoot.as_string())
+        smtp_server.login(sender, password)
+        smtp_server.sendmail(sender, recipients, msgRoot.as_string())
     print("Message sent!")
+
 
 def generate_qrcode(public_url):
     qr = qrcode.QRCode(
@@ -57,7 +58,8 @@ def generate_qrcode(public_url):
     qrcode_image_path = tempfile.NamedTemporaryFile(suffix='.png').name
     img.save(qrcode_image_path)
     return qrcode_image_path
-    
+
+
 @functions_framework.http
 def approvalimage(request):
     """HTTP Cloud Function.
@@ -85,7 +87,7 @@ def approvalimage(request):
     headers = {"Access-Control-Allow-Origin": "*"}
 
     request_args = request.args
-  
+
     public_url = request_args["public_url"]
     email = request_args["email"]
     key = request_args["key"]
@@ -94,7 +96,7 @@ def approvalimage(request):
 
     if key != os.getenv("SECRET_KEY"):
         return "Unauthorized", 401, headers
-    
+
     if is_gen_image_job_approvaed_or_rejected(email, public_url):
         return "Already approved or rejected!", 200, headers
 
@@ -106,7 +108,8 @@ def approvalimage(request):
 
     qrcode_image_path = generate_qrcode(public_url)
 
-    subject = "Your Gen Image at " + datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+    subject = "Your Gen Image at " + \
+        datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
     body = f"""<html>
 <body>
     <p>
@@ -125,23 +128,26 @@ def approvalimage(request):
     recipients = [email]
     password = os.getenv("APP_PASSWORD")
 
-    send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password)
+    send_email(subject, body, qrcode_image_path,
+               gen_image_path, sender, recipients, password)
 
     update_gen_image_job(email, public_url, approver_email)
-                  
+
     return "Approved and sent to " + email, 200, headers
-    
-def update_gen_image_job(email: str, image_url:str, approver_email:str) -> bool:
+
+
+def update_gen_image_job(email: str, image_url: str, approver_email: str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     with client.transaction():
-        key = client.key('GenImageJob', email + "->" +image_url)
-        entity = client.get(key)  
+        key = client.key('GenImageJob', email + "->" + image_url)
+        entity = client.get(key)
         entity['approver_email'] = approver_email
         entity['status'] = "APPROVAED"
-        entity['modify_time'] = datetime.datetime.now(timezone.utc);   
+        entity['modify_time'] = datetime.datetime.now(timezone.utc)
         client.put(entity)
 
-def is_gen_image_job_approvaed_or_rejected(email: str, image_url:str) -> str:
+
+def is_gen_image_job_approvaed_or_rejected(email: str, image_url: str) -> str:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
-    student = client.get(client.key('GenImageJob', email + "->" +image_url))
+    student = client.get(client.key('GenImageJob', email + "->" + image_url))
     return student['status'] == "APPROVAED" or student['status'] == "REJECTED"
