@@ -26,13 +26,29 @@
         <textarea id="negativePrompt" class="form-control" name="negativePrompt" rows="5" cols="100" required
           aria-describedby="negativePromptHelp" placeholder="Write your negative prompt here..."></textarea>
         <small id="promptHelp" class="form-text text-muted">Please describe what you want AI to draw.</small>
+        <input id="genimage" type="submit" value="Gen Image" class="btn btn-primary" />
+        <input id="getImage" type="submit" value="Get Image" class="btn btn-primary" />
       </div>
-      <input id="genimage" type="submit" value="Gen Image" class="btn btn-primary" />
     </form>
+    <img id="approvedImage" />
   </div>
   <script>
     //When click on genimage, disable default submit, and send ajax get request to api.
     // with parameters key, email and prompt.
+
+    let imageUrl = "";
+    function refreshImage() {
+      if (imageUrl) {
+        $('#approvedImage').attr('src', imageUrl + "?refresh=" + Math.random());
+      }
+    }
+    //on click refresh image use jquery
+    const refreshButton = document.getElementById("getImage");
+    refreshButton.addEventListener("click", function (event) {
+      event.preventDefault();
+      refreshImage();
+    });
+
     const genButton = document.getElementById("genimage");
     genButton.addEventListener("click", function (event) {
       event.preventDefault();
@@ -58,10 +74,21 @@
       setTimeout(function () {
         genButton.disabled = false;
       }, 15000);
+
       const xhttp = new XMLHttpRequest();
       xhttp.onreadystatechange = function () {
+        if (this.status == 500) {
+          alert("Your prompt is invald and please try other prompt!");
+          return;
+        }
+        if (this.status == 429) {
+          alert("Rate limit exceeded, and please wait for 30s!");
+          return;
+        }
         if (this.readyState == 4 && this.status == 200) {
-          alert(this.responseText);
+          console.log(this.responseText);
+          imageUrl = this.responseText;
+          $('#approvedImage').attr('src', imageUrl);
         }
       };
       xhttp.open(
