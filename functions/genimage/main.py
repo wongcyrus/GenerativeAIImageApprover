@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 import requests
-from flask import escape
 
 import functions_framework
 from google.cloud import storage
@@ -23,12 +22,15 @@ from email.mime.image import MIMEImage
 import tempfile
 
 import vertexai
-from vertexai.preview.vision_models import Image, ImageGenerationModel
+from vertexai.preview.vision_models import ImageGenerationModel
 
-vertexai.init(project=os.getenv("GCP_PROJECT"), location=os.getenv("MODEL_GARDEN_REGION"))
+vertexai.init(project=os.getenv("GCP_PROJECT"),
+              location=os.getenv("MODEL_GARDEN_REGION"))
 
 
 IMAGE_BUCKET = os.getenv("IMAGE_BUCKET")
+APPROVED_IMAGE_BUCKET = os.getenv("APPROVED_IMAGE_BUCKET")
+
 
 def is_valid_email(email):
     # Define a regular expression pattern for a valid email address
@@ -66,8 +68,8 @@ def genimage(request):
 
         return ("", 204, headers)
     headers = {"Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods":"POST, GET, PUT",
-            "Access-Control-Allow-Headers": "Content-Type"}
+               "Access-Control-Allow-Methods": "POST, GET, PUT",
+               "Access-Control-Allow-Headers": "Content-Type"}
 
     request_args = request.args
 
@@ -78,15 +80,15 @@ def genimage(request):
 
     if key != os.getenv("SECRET_KEY"):
         return "Unauthorized", 401, headers
-    
+
     fernet = Fernet(os.getenv("ENCRYPT_KEY"))
-    email = fernet.decrypt(emailhash).decode()   
+    email = fernet.decrypt(emailhash).decode()
     if not is_valid_email(email):
         return "Invalid encrypted email!", 401, headers
-    print(f"email: {email}")   
+    print(f"email: {email}")
 
     if is_gen_image_job_exceed_rate_limit(email):
-        return "Rate limit exceeded, and please wait for 30s!", 200, headers
+        return "Rate limit exceeded, and please wait for 30s!", 429, headers
     save_new_gen_image_job(email, prompt, negative_prompt)
 
     model = ImageGenerationModel.from_pretrained("imagegeneration@002")
@@ -97,15 +99,15 @@ def genimage(request):
         seed=1
     )
 
-    image_name = "image-"+str(hash(prompt))+ ".png"
+    image_name = "image-"+str(hash(prompt)) + ".png"
     image_path = f"/tmp/{image_name}"
     images[0].save(location=image_path, include_generation_parameters=True)
 
     public_url = upload_image_to_bucket(image_path)
 
-    params = {'key':key, 'email': email, 'public_url': public_url}
+    params = {'key': key, 'email': email, 'public_url': public_url}
     approver_emails = os.getenv("APPROVER_EMAILS").split(",")
-    subject = "Verify Gen Image for "+ email
+    subject = "Verify Gen Image for " + email
     sender = os.getenv("GMAIL")
 
     if reviewer_emailhash := request_args.get("reviewer_emailhash"):
@@ -113,25 +115,29 @@ def genimage(request):
         if is_valid_email(reviewer_email):
             approver_emails.append(reviewer_email)
     # remove duplicate emails
-    approver_emails = list(dict.fromkeys(approver_emails)) 
-        
+    approver_emails = list(dict.fromkeys(approver_emails))
+
     recipients = approver_emails
     password = os.getenv("APP_PASSWORD")
 
-    params = {'key':key, 'email': email, 'public_url': public_url}
-    update_gen_image_job(email, public_url);
-    send_email(subject, sender, recipients, password, params)   
-                  
-    return "Please check your email!", 200, headers
-    
-def download_image(image_url):   
+    params = {'key': key, 'email': email, 'public_url': public_url}
+    update_gen_image_job(email, public_url)
+    send_email(subject, sender, recipients, password, params)
+
+    approved_image_url = f"https://storage.googleapis.com/{APPROVED_IMAGE_BUCKET}/" + image_name
+
+    return approved_image_url, 200, headers
+
+
+def download_image(image_url):
     # Download image from url
     r = requests.get(image_url, allow_redirects=True)
     # Image name with hash or image_url
-    image_name = "image-"+str(hash(image_url))+ ".png"
+    image_name = "image-"+str(hash(image_url)) + ".png"
     image_path = f"/tmp/{image_name}"
     open(image_path, "wb").write(r.content)
     return image_path
+
 
 def upload_image_to_bucket(image_path):
     # Upload image to bucket
@@ -140,25 +146,30 @@ def upload_image_to_bucket(image_path):
     # extract image name from path
     image_name = Path(image_path).name
     blob = bucket.blob(image_name)
+    blob.content_type = 'image/png'
     blob.upload_from_filename(image_path)
     return blob.public_url
-    
-def send_email(subject:str,sender:str, recipients:list[str], password:str, params:dict):
+
+
+def send_email(subject: str, sender: str, recipients: list[str], password: str, params: dict):
     with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp_server:
-        smtp_server.login(sender, password)   
-        for recipient in recipients:            
+        smtp_server.login(sender, password)
+        for recipient in recipients:
             params['approver_email'] = recipient
             body = get_email_msg(subject, sender, recipient, params)
             smtp_server.sendmail(sender, recipient, body)
-     
+
     print("Message sent!")
 
-def get_email_msg(subject:str, sender:str, recipient:str,params:dict) -> str:    
-    approval_url = os.getenv("APPROVAL_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
-    reject_url = os.getenv("REJECT_URL")+"?" + urllib.parse.urlencode(params, doseq=True)
+
+def get_email_msg(subject: str, sender: str, recipient: str, params: dict) -> str:
+    approval_url = os.getenv("APPROVAL_URL")+"?" + \
+        urllib.parse.urlencode(params, doseq=True)
+    reject_url = os.getenv("REJECT_URL")+"?" + \
+        urllib.parse.urlencode(params, doseq=True)
     public_url = params["public_url"]
 
-    body= f"""
+    body = f"""
 Please check the following image and click the link to approve it.
 <br/>
 <img src="cid:image1"><br/>
@@ -179,8 +190,8 @@ Reject:<br/>
     msgRoot['To'] = recipient
 
     msgHtml = MIMEText(body, 'html')
-  
-    # Define the image's ID as referenced in the HTML body above   
+
+    # Define the image's ID as referenced in the HTML body above
     response = requests.get(public_url)
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(response.content)
@@ -188,50 +199,54 @@ Reject:<br/>
     img = open(gen_image_path, 'rb').read()
     msgImg1 = MIMEImage(img, 'png')
     msgImg1.add_header('Content-ID', '<image1>')
-    msgImg1.add_header('Content-Disposition', 'inline', filename="genimage.png")
-  
+    msgImg1.add_header('Content-Disposition', 'inline',
+                       filename="genimage.png")
+
     msgRoot.attach(msgHtml)
     msgRoot.attach(msgImg1)
 
     return msgRoot.as_string()
 
-def save_new_gen_image_job(email: str, prompt:str, negative_prompt:str) -> bool:
+
+def save_new_gen_image_job(email: str, prompt: str, negative_prompt: str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     key = client.key('GenImageJob', email)
     entity = datastore.Entity(key=key)
-    now = datetime.datetime.now(timezone.utc);
+    now = datetime.datetime.now(timezone.utc)
     entity.update({
         'email': email,
-        'prompt': prompt ,
-        'negative_prompt':negative_prompt,
+        'prompt': prompt,
+        'negative_prompt': negative_prompt,
         'status': "GENERATING_IMAGE",
         'create_time': now,
-        'modify_time': now 
+        'modify_time': now
     })
     client.put(entity)
 
-def update_gen_image_job(email: str, image_url:str) -> bool:
+
+def update_gen_image_job(email: str, image_url: str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     with client.transaction():
-        old_key = client.key('GenImageJob', email) 
-        old_entity= client.get(old_key)       
-        entity = datastore.Entity(key=client.key('GenImageJob', email + "->" +image_url))
+        old_key = client.key('GenImageJob', email)
+        old_entity = client.get(old_key)
+        entity = datastore.Entity(key=client.key(
+            'GenImageJob', email + "->" + image_url))
         entity.update({
-        'email': email,
-        'prompt': old_entity['prompt'] ,
-        'negative_prompt': old_entity['negative_prompt'],
-        'status': "WAITING_FOR_APPROVAL",
-        'create_time': old_entity['create_time'],
-        'modify_time': datetime.datetime.now(timezone.utc) 
-        })     
+            'email': email,
+            'prompt': old_entity['prompt'],
+            'negative_prompt': old_entity['negative_prompt'],
+            'status': "WAITING_FOR_APPROVAL",
+            'create_time': old_entity['create_time'],
+            'modify_time': datetime.datetime.now(timezone.utc)
+        })
         client.put(entity)
-        client.delete(old_key)     
+        client.delete(old_key)
 
 
 def is_gen_image_job_exceed_rate_limit(email: str) -> bool:
     client = datastore.Client(project=os.environ.get('GCP_PROJECT'))
     query = client.query(kind='GenImageJob')
-    query.add_filter('email', '=', email)    
+    query.add_filter('email', '=', email)
     query.order = ['-modify_time']
     results = list(query.fetch(limit=1))
     if len(results) == 0:
@@ -242,4 +257,3 @@ def is_gen_image_job_exceed_rate_limit(email: str) -> bool:
         diff = now - last_approved_time
         waiting_time = 60 / int(os.environ.get('RATE_LIMIT_PER_MINUTE'))
         return diff.seconds < waiting_time  # 30 seconds rate limit
-    

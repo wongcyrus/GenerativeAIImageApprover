@@ -1,11 +1,11 @@
 
 import datetime
 import os
-from flask import escape
 from urllib.parse import quote
 import functions_framework
 import re
 from cryptography.fernet import Fernet
+
 
 def is_valid_email(email):
     # Define a regular expression pattern for a valid email address
@@ -30,31 +30,29 @@ def emailhash(request):
         <https://flask.palletsprojects.com/en/1.1.x/api/#flask.make_response>.
     """
 
-
     request_args = request.args
     key = request_args["key"]
     email = request_args["email"]
     reviewer_email = request_args["reviewer_email"]
-  
+
     SECRET_KEY = os.getenv("SECRET_KEY")
     if key != SECRET_KEY:
-        return "Unauthorized", 401   
-   
-   
+        return "Unauthorized", 401
+
     if not is_valid_email(email):
         return "Invalid encrypted email!", 401
-    
-    print(f"email: {email}") 
-    fernet = Fernet(os.getenv("ENCRYPT_KEY"))  
+
+    print(f"email: {email}")
+    fernet = Fernet(os.getenv("ENCRYPT_KEY"))
 
     IMAGE_BUCKET = os.getenv("IMAGE_BUCKET")
     GEN_IMAGE_URL = quote(os.getenv("GEN_IMAGE_URL"))
-    
-    encMessage = fernet.encrypt(email.encode())    
+
+    encMessage = fernet.encrypt(email.encode())
     # Encode the URL component using the quote function
     emailhash = quote(encMessage)
     url = f"https://storage.googleapis.com/{IMAGE_BUCKET}/index.html?key={SECRET_KEY}&api={GEN_IMAGE_URL}&emailhash={emailhash}"
-   
+
     if is_valid_email(reviewer_email):
         reviewer_emailhash = quote(fernet.encrypt(reviewer_email.encode()))
         url = f"{url}&reviewer_emailhash={reviewer_emailhash}"
@@ -71,6 +69,6 @@ Gen Image URL:
 <br/> 
 <br/> 
 <a href="{url}">{url}</a>
-""";
+"""
 
     return result, 200

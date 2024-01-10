@@ -59,6 +59,25 @@ class ImageGenStack extends TerraformStack {
       randomProvider: randomProvider,
     });
 
+    const staticSitePattern2 = new StaticSitePattern(this, "static-site2", {
+      project: project.projectId,
+      region: process.env.REGION!,
+      indexPagePath: path.join(
+        __dirname,
+        "assets",
+        process.env.REGION!,
+        "index.html"
+      ),
+      notFoundPagePath: path.join(
+        __dirname,
+        "assets",
+        process.env.REGION!,
+        "404.html"
+      ),
+      randomProvider: randomProvider,
+    });
+
+
     const cloudFunctionDeploymentConstruct = new CloudFunctionDeploymentConstruct(
       this,
       "cloud-function-deployment",
@@ -88,6 +107,8 @@ class ImageGenStack extends TerraformStack {
           SECRET_KEY: process.env.SECRET_KEY!,
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
+          IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
+          APPROVED_IMAGE_BUCKET: staticSitePattern2.siteBucket.name,
         }
       }
     );
@@ -133,6 +154,7 @@ class ImageGenStack extends TerraformStack {
           ENCRYPT_KEY: process.env.ENCRYPT_KEY!,
           MODEL_GARDEN_REGION: process.env.MODEL_GARDEN_REGION!,
           IMAGE_BUCKET: staticSitePattern1.siteBucket.name,
+          APPROVED_IMAGE_BUCKET: staticSitePattern2.siteBucket.name,
           GMAIL: process.env.GMAIL!,
           APP_PASSWORD: process.env.APP_PASSWORD!,
           APPROVAL_URL: approvalImagecloudFunctionConstruct.cloudFunction.url,
@@ -200,9 +222,14 @@ class ImageGenStack extends TerraformStack {
         "serviceAccount:" + genImagecloudFunctionConstruct.serviceAccount.email,
     });
 
+    new GoogleStorageBucketIamMember(this, "static-site2-iam-member", {
+      bucket: staticSitePattern2.siteBucket.name,
+      role: "roles/storage.legacyBucketWriter",
+      member:
+        "serviceAccount:" + approvalImagecloudFunctionConstruct.serviceAccount.email,
+    });
 
-
-    new GoogleProjectIamMember(this, "DatastoreProjectIamMember", {
+    new GoogleProjectIamMember(this, "AiplatformProjectIamMember", {
       project: project.id,
       role: "roles/aiplatform.user",
       member: "serviceAccount:" + genImagecloudFunctionConstruct.serviceAccount.email,

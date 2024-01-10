@@ -2,16 +2,21 @@
 import datetime
 from datetime import timezone
 import os
+from pathlib import Path
 import tempfile
 import requests
 import functions_framework
 import smtplib
 from google.cloud import datastore
+from google.cloud import storage
 import qrcode
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+
+
+APPROVED_IMAGE_BUCKET = os.getenv("APPROVED_IMAGE_BUCKET")
 
 
 def send_email(subject, body, qrcode_image_path, gen_image_path, sender, recipients, password):
@@ -101,7 +106,7 @@ def approvalimage(request):
         return "Already approved or rejected!", 200, headers
 
     # Download the image from the URL public_url and save it to a temporary file
-    response = requests.get(public_url)
+    response = requests.get(public_url, timeout=30)
     with tempfile.NamedTemporaryFile(delete=False) as f:
         f.write(response.content)
         gen_image_path = f.name
@@ -133,7 +138,21 @@ def approvalimage(request):
 
     update_gen_image_job(email, public_url, approver_email)
 
+    upload_image_to_bucket(gen_image_path, public_url)
+
     return "Approved and sent to " + email, 200, headers
+
+
+def upload_image_to_bucket(image_path, public_url):
+    # Upload image to bucket
+    client = storage.Client()
+    bucket = client.get_bucket(APPROVED_IMAGE_BUCKET)
+    # extract image name from path
+    key = Path(public_url).name
+    blob = bucket.blob(key)
+    blob.content_type = 'image/png'
+    blob.upload_from_filename(image_path)
+    return blob.public_url
 
 
 def update_gen_image_job(email: str, image_url: str, approver_email: str) -> bool:
