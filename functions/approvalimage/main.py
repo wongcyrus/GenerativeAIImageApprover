@@ -111,30 +111,30 @@ def approvalimage(request):
         f.write(response.content)
         gen_image_path = f.name
 
-    qrcode_image_path = generate_qrcode(public_url)
+#     qrcode_image_path = generate_qrcode(public_url)
 
-    subject = "Your Gen Image at " + \
-        datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
-    body = f"""<html>
-<body>
-    <p>
-        Check out your generated image at: <br/>
-        <img src="cid:image1"><br/>
-        {public_url}
-    </p>
-    <p>
-        Scan this QR Code: <br/>
-        <img src="cid:image2">
-    </p>
-</body>
-</html> 
-"""
-    sender = os.getenv("GMAIL")
-    recipients = [email]
-    password = os.getenv("APP_PASSWORD")
+#     subject = "Your Gen Image at " + \
+#         datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S")
+#     body = f"""<html>
+# <body>
+#     <p>
+#         Check out your generated image at: <br/>
+#         <img src="cid:image1"><br/>
+#         {public_url}
+#     </p>
+#     <p>
+#         Scan this QR Code: <br/>
+#         <img src="cid:image2">
+#     </p>
+# </body>
+# </html>
+# """
+#     sender = os.getenv("GMAIL")
+#     recipients = [email]
+#     password = os.getenv("APP_PASSWORD")
 
-    send_email(subject, body, qrcode_image_path,
-               gen_image_path, sender, recipients, password)
+#     send_email(subject, body, qrcode_image_path,
+#                gen_image_path, sender, recipients, password)
 
     update_gen_image_job(email, public_url, approver_email)
 
