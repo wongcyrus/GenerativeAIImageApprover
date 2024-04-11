@@ -150,6 +150,7 @@ class ImageGenStack extends TerraformStack {
         makePublic: true,
         cloudFunctionDeploymentConstruct: cloudFunctionDeploymentConstruct,
         environmentVariables: {
+          ENABLE: "TRUE",
           SECRET_KEY: process.env.SECRET_KEY!,
           ENCRYPT_KEY: process.env.ENCRYPT_KEY!,
           MODEL_GARDEN_REGION: process.env.MODEL_GARDEN_REGION!,

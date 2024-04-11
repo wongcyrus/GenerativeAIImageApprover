@@ -78,6 +78,9 @@ def genimage(request):
     negative_prompt = request_args["negativePrompt"]
     emailhash = request_args["emailhash"]
 
+    if os.getenv("ENABLE") != "TRUE":
+        return "Unauthorized", 401, headers
+
     if key != os.getenv("SECRET_KEY"):
         return "Unauthorized", 401, headers
 
@@ -95,8 +98,7 @@ def genimage(request):
     images = model.generate_images(
         prompt=prompt,
         negative_prompt=negative_prompt,
-        number_of_images=1,
-        seed=1
+        number_of_images=1
     )
 
     image_name = "image-"+str(hash(prompt)) + ".png"
